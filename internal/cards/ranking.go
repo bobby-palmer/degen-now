@@ -307,7 +307,10 @@ func getTrips(hand []Card) *HandResult {
 			return r != rank
 		})
 
-		thisResult := HandResult{ThreeOfAKind, otherRanks[:2]}
+		thisResult := HandResult{
+			ThreeOfAKind,
+			[]Rank{rank, otherRanks[0], otherRanks[1]},
+		}
 		if result.Compare(thisResult) < 0 {
 			result = thisResult
 		}
@@ -354,7 +357,10 @@ func getTwoPair(hand []Card) *HandResult {
 				return r != pairTwo
 			})
 
-			thisResult := HandResult{TwoPair, withoutPairs[:1]}
+			thisResult := HandResult{
+				TwoPair,
+				[]Rank{pairOne, pairTwo, withoutPairs[0]},
+			}
 			if result.Compare(thisResult) < 0 {
 				result = thisResult
 			}
@@ -387,7 +393,10 @@ func getOnePair(hand []Card) *HandResult {
 			return r != rank
 		})
 
-		thisResult := HandResult{OnePair, withoutPair[:3]}
+		thisResult := HandResult{
+			OnePair,
+			[]Rank{rank, withoutPair[0], withoutPair[1], withoutPair[2]},
+		}
 		if result.Compare(thisResult) < 0 {
 			result = thisResult
 		}
