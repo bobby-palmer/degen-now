@@ -4,12 +4,13 @@ import (
 	"testing"
 )
 
-func TestRank5(t *testing.T) {
+func TestRank5CorrectRank(t *testing.T) {
 	type TestPair struct {
 		hand     []Card
 		expected HandRank
 	}
 
+	// TODO add names to harness
 	toTest := []TestPair{
 		// Royal flush
 		{[]Card{{SuitSpades, RankAce}, {SuitSpades, RankKing}, {SuitSpades, RankQueen}, {SuitSpades, RankJack}, {SuitSpades, RankTen}}, RoyalFlush},
@@ -51,4 +52,8 @@ func TestRank5(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func TestRank5Tiebreaker(t *testing.T) {
+	// TODO ranking within rank
 }

@@ -63,7 +63,7 @@ type Card struct {
 type Deck []Card
 
 func NewDeck() Deck {
-	deck := make([]Card, 52)
+	deck := make([]Card, 0, 52)
 
 	for _, suit := range Suits {
 		for _, rank := range Ranks {
@@ -82,13 +82,13 @@ func (d Deck) Shuffle() {
 
 var ErrNoCards = errors.New("no cards to deal")
 
-func (d Deck) Deal() (Card, error) {
-	if len(d) == 0 {
+func (d *Deck) Deal() (Card, error) {
+	if len(*d) == 0 {
 		return Card{}, ErrNoCards
 	}
 
-	result := d[len(d)-1]
-	d = d[:len(d)-1]
+	result := (*d)[len(*d)-1]
+	*d = (*d)[:len(*d)-1]
 
 	return result, nil
 }
