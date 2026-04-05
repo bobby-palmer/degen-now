@@ -37,8 +37,8 @@ func Count[E any](arr []E, p func(E) bool) int {
 func Map[E any, O any](arr []E, f func(E) O) []O {
 	result := make([]O, len(arr))
 
-	for _, elt := range arr {
-		result = append(result, f(elt))
+	for i, elt := range arr {
+		result[i] = f(elt)
 	}
 
 	return result

@@ -80,7 +80,7 @@ func (d Deck) Shuffle() {
 	})
 }
 
-var ErrNoCards = errors.New("deal from empty deck")
+var ErrNoCards = errors.New("no cards to deal")
 
 func (d Deck) Deal() (Card, error) {
 	if len(d) == 0 {
