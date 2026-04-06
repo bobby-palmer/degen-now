@@ -1,11 +1,17 @@
 package game
 
-type Table struct{}
+type Config struct{}
 
-func NewTable() *Table {
-	return &Table{}
+func NewConfig() *Config {
+	return &Config{}
 }
 
-func (t *Table) Join(name string, stack int64) error {
-	return nil // TODO
+type Table struct {
+	*Config
+}
+
+func NewTable() *Table {
+	return &Table{
+		Config: NewConfig(),
+	}
 }

@@ -14,6 +14,15 @@ const (
 	SuitClubs
 )
 
+func (s Suit) String() string {
+	return [...]string{
+		"Hearts",
+		"Diamonds",
+		"Spades",
+		"Clubs",
+	}[s]
+}
+
 var Suits = []Suit{
 	SuitHearts,
 	SuitDiamonds,
@@ -39,6 +48,24 @@ const (
 	RankAce
 )
 
+func (r Rank) String() string {
+	return [...]string{
+		"Two",
+		"Three",
+		"Four",
+		"Five",
+		"Six",
+		"Seven",
+		"Eight",
+		"Nine",
+		"Ten",
+		"Jack",
+		"Queen",
+		"King",
+		"Ace",
+	}[r]
+}
+
 var Ranks = []Rank{
 	RankTwo,
 	RankThree,
@@ -58,6 +85,10 @@ var Ranks = []Rank{
 type Card struct {
 	Suit
 	Rank
+}
+
+func (c Card) String() string {
+	return c.Rank.String() + " of " + c.Suit.String()
 }
 
 type Deck []Card

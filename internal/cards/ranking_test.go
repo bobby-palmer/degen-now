@@ -37,6 +37,7 @@ func TestRank5CorrectRank(t *testing.T) {
 		{[]Card{{SuitSpades, RankAce}, {SuitHearts, RankAce}, {SuitClubs, RankNine}, {SuitClubs, RankEight}, {SuitClubs, RankSeven}}, OnePair},
 		// high card
 		{[]Card{{SuitClubs, RankAce}, {SuitSpades, RankThree}, {SuitClubs, RankFour}, {SuitClubs, RankFive}, {SuitClubs, RankSeven}}, HighCard},
+		{[]Card{{SuitClubs, RankKing}, {SuitClubs, RankAce}, {SuitHearts, RankTwo}, {SuitClubs, RankThree}, {SuitClubs, RankFour}}, HighCard},
 	}
 
 	for i, pair := range toTest {
@@ -55,5 +56,5 @@ func TestRank5CorrectRank(t *testing.T) {
 }
 
 func TestRank5Tiebreaker(t *testing.T) {
-	// TODO ranking within rank
+	// TODO test ranking within rank
 }
