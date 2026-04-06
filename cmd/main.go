@@ -1,86 +1,133 @@
 package main
 
 import (
-	"crypto/rand"
+	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
-	"sync"
+	"os"
+	"time"
 
-	"github.com/bobby-palmer/degen-now/internal/game"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
-func generateRandomID(n int) string {
-	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-	b := make([]byte, n)
-	rand.Read(b)
-	for i := range b {
-		b[i] = chars[int(b[i])%len(chars)]
+var (
+	oauthConfig *oauth2.Config
+	jwtSecret   = []byte(os.Getenv("JWT_SECRET"))
+)
+
+func init() {
+	oauthConfig = &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  "http://localhost:8080/api/auth/callback",
+		Scopes:       []string{"email", "profile"},
+		Endpoint:     google.Endpoint,
 	}
-	return string(b)
-}
 
-type API struct {
-	mu     sync.Mutex
-	tables map[string]*game.Table
-}
-
-func NewApi() *API {
-	return &API{
-		mu:     sync.Mutex{},
-		tables: make(map[string]*game.Table),
+	if len(jwtSecret) == 0 {
+		jwtSecret = []byte("dev-secret-change-in-prod")
 	}
 }
 
-func (api *API) getTable(tableID string) (*game.Table, error) {
-	api.mu.Lock()
-	defer api.mu.Unlock()
-
-	table, ok := api.tables[tableID]
-	if !ok {
-		return nil, fmt.Errorf("table not found, id: %s", tableID)
-	}
-
-	return table, nil
+type GoogleUser struct {
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
 }
 
-func (api *API) Create(w http.ResponseWriter, r *http.Request) {
-	api.mu.Lock()
-	defer api.mu.Unlock()
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	url := oauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
 
-	var tableID string
-	for {
-		tableID = generateRandomID(6)
+func handleCallback(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "no code", http.StatusBadRequest)
+		return
+	}
 
-		_, ok := api.tables[tableID]
-		if !ok {
-			break
+	token, err := oauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		http.Error(w, "token exchange failed", http.StatusInternalServerError)
+		return
+	}
+
+	client := oauthConfig.Client(context.Background(), token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		http.Error(w, "failed to get user info", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var user GoogleUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		http.Error(w, "failed to decode user", http.StatusInternalServerError)
+		return
+	}
+
+	// Create JWT
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email": user.Email,
+		"name":  user.Name,
+		"exp":   time.Now().Add(7 * 24 * time.Hour).Unix(),
+	})
+
+	tokenString, err := jwtToken.SignedString(jwtSecret)
+	if err != nil {
+		http.Error(w, "failed to create token", http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   7 * 24 * 60 * 60,
+	})
+
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+}
+
+func requireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("auth")
+		if err != nil {
+			http.Redirect(w, r, "/api/auth/login", http.StatusTemporaryRedirect)
+			return
 		}
-	}
 
-	api.tables[tableID] = game.NewTable()
+		token, err := jwt.Parse(cookie.Value, func(t *jwt.Token) (any, error) {
+			return jwtSecret, nil
+		})
 
-	type Response struct {
-		TableID string `json:"table_id"`
-	}
+		if err != nil || !token.Valid {
+			http.Redirect(w, r, "/api/auth/login", http.StatusTemporaryRedirect)
+			return
+		}
 
-	if err := json.NewEncoder(w).Encode(Response{tableID}); err != nil {
-		slog.Error("encoding response", "err", err)
-	}
-
-	slog.Debug("table created", "TableID", tableID)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
+	http.HandleFunc("/api/auth/login", handleLogin)
+	http.HandleFunc("/api/auth/callback", handleCallback)
 
-	api := NewApi()
+	// Serve frontend static files if dist exists (auth required)
+	if _, err := os.Stat("frontend/dist"); err == nil {
+		fs := http.FileServer(http.Dir("frontend/dist"))
+		http.Handle("/", requireAuth(fs))
+		log.Println("Serving frontend from frontend/dist")
+	}
 
-	http.HandleFunc("/api/create", api.Create)
-
+	log.Println("Server starting on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("serving:", err)
 	}
-
 }

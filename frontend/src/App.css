@@ -1,0 +1,55 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+}
+
+.home, .created {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+button {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #16a34a;
+}
+
+button:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.table-id {
+  font-size: 2rem;
+  background: #1a1a1a;
+  padding: 16px 32px;
+  border-radius: 8px;
+  letter-spacing: 4px;
+}
+
+.hint {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #ef4444;
+}
